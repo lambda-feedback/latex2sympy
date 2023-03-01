@@ -1,23 +1,23 @@
-import sympy
 import re
-from sympy import matrix_symbols, simplify, factor, expand, apart, expand_trig
-from antlr4 import InputStream, CommonTokenStream
+
+import sympy
+from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
+from sympy import apart, expand, expand_trig, factor, matrix_symbols, simplify
 
 try:
-    from gen.PSParser import PSParser
     from gen.PSLexer import PSLexer
     from gen.PSListener import PSListener
+    from gen.PSParser import PSParser
 except Exception:
     from .gen.PSParser import PSParser
     from .gen.PSLexer import PSLexer
     from .gen.PSListener import PSListener
 
-from sympy.printing.str import StrPrinter
+import hashlib
 
 from sympy.parsing.sympy_parser import parse_expr
-
-import hashlib
+from sympy.printing.str import StrPrinter
 
 is_real = None
 
@@ -153,29 +153,8 @@ def convert_relation(rel):
         return sympy.StrictGreaterThan(lh, rh, evaluate=False)
     elif rel.GTE():
         return sympy.GreaterThan(lh, rh, evaluate=False)
-    elif rel.EQUAL():
+    elif rel.EQUAL() or rel.ASSIGNMENT():
         return sympy.Eq(lh, rh, evaluate=False)
-    elif rel.ASSIGNMENT():
-        # !Use Global variances
-        if lh.is_Symbol:
-            # set value
-            variances[lh] = rh
-            var[str(lh)] = rh
-            return rh
-        else:
-            # find the symbols in lh - rh
-            equation = lh - rh
-            syms = equation.atoms(sympy.Symbol)
-            if len(syms) > 0:
-                # Solve equation
-                result = []
-                for sym in syms:
-                    values = sympy.solve(equation, sym)
-                    for value in values:
-                        result.append(sympy.Eq(sym, value, evaluate=False))
-                return result
-            else:
-                return sympy.Eq(lh, rh, evaluate=False)
     elif rel.IN():
         # !Use Global variances
         if hasattr(rh, 'is_Pow') and rh.is_Pow and hasattr(rh.exp, 'is_Mul'):
