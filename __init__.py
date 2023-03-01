@@ -1,1 +1,1 @@
-import latex2sympy2
+from . import latex2sympy2
